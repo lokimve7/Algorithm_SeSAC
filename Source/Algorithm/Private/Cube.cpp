@@ -2,6 +2,9 @@
 
 
 #include "Cube.h"
+#include <Components/Border.h>
+#include <Components/TextBlock.h>
+#include <Components/WidgetComponent.h>
 
 // Sets default values
 ACube::ACube()
@@ -16,6 +19,12 @@ void ACube::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	UWidgetComponent* widget = Cast<UWidgetComponent>(GetComponentByClass(UWidgetComponent::StaticClass()));
+	
+	outLine = Cast<UBorder>(widget->GetUserWidgetObject()->GetWidgetFromName(TEXT("OutLine")));
+	textTotal = Cast<UTextBlock>(widget->GetUserWidgetObject()->GetWidgetFromName(TEXT("Total")));
+	textStart = Cast<UTextBlock>(widget->GetUserWidgetObject()->GetWidgetFromName(TEXT("byStart")));
+	textEnd = Cast<UTextBlock>(widget->GetUserWidgetObject()->GetWidgetFromName(TEXT("byEnd")));
 }
 
 // Called every frame
@@ -38,7 +47,20 @@ void ACube::SetCost(ACube* currCube, ACube* goalCube)
 	// 최종 비용
 	totalCost = startCost + endCost;
 
+	textTotal->SetText(FText::AsNumber((int32)totalCost));
+	textStart->SetText(FText::AsNumber((int32)startCost));
+	textEnd->SetText(FText::AsNumber((int32)endCost));
+
+	SetColor(FLinearColor::Blue);
+
+	parent = currCube;
+
 	UE_LOG(LogTemp, Warning, TEXT("%s --> s : %f, e : %f, t : %f"), *GetActorNameOrLabel(), startCost, endCost, totalCost);
 
+}
+
+void ACube::SetColor(FLinearColor color)
+{
+	outLine->SetBrushColor(color);
 }
 

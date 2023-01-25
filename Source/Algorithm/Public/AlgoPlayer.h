@@ -56,4 +56,5 @@ public:
 	void FindNear();
 
 	void AddOpen(FVector dir);
+	
 };

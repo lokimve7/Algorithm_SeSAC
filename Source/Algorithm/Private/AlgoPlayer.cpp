@@ -52,6 +52,12 @@ void AAlgoPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 void AAlgoPlayer::InputMouseLDown()
 {
+	if (startCube != nullptr)
+	{
+		FindPath();
+		return;
+	}
+
 	//마우스 클릭 좌표를 얻어오자
 	FVector2D mousePos = UWidgetLayoutLibrary::GetMousePositionOnViewport(GetWorld());
 	
@@ -71,8 +77,8 @@ void AAlgoPlayer::InputMouseLDown()
 	{
 		startCube = Cast<ACube>(hit.GetActor());
 		UE_LOG(LogTemp, Warning, TEXT("start : %s"), *hit.GetActor()->GetActorNameOrLabel());
-
-		openArray.Add(startCube);
+		
+		openArray.Insert(startCube, 0);
 
 	}
 
@@ -111,6 +117,34 @@ void AAlgoPlayer::FindPath()
 	//뒤
 	AddOpen(FVector::BackwardVector);
 
+
+	////정렬
+	//openArray.Sort([](const ACube& a, const ACube& b) {
+	//	return (a.totalCost < b.totalCost);
+	//});	
+
+	openArray.Remove(currCube);
+	closeArray.Add(currCube);
+	currCube->SetColor(FLinearColor::Red);
+
+	if (openArray.Num() > 0 && openArray[0] != goalCube)
+	{
+
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Find Path Complete!"));
+
+		ACube* cube = goalCube;
+		while (cube->parent != nullptr)
+		{
+			cube->SetColor(FLinearColor::Yellow);
+			cube = cube->parent;
+		}
+
+		startCube = nullptr;
+		goalCube = nullptr;
+	}
 }
 
 void AAlgoPlayer::FindNear()
@@ -135,8 +169,18 @@ void AAlgoPlayer::AddOpen(FVector dir)
 		{
 			//부딪힌 큐브의 Cost(비용) 구하자
 			cube->SetCost(currCube, goalCube);
+
+			int32 i = 0;
+			for (i = 0; i < openArray.Num(); i++)
+			{
+				if (openArray[i]->totalCost >= cube->totalCost)
+				{
+					break;
+				}
+			}
+
 			//openArray 추가
-			openArray.Add(cube);
+			openArray.Insert(cube, i);
 		}
 	}
 }
