@@ -35,4 +35,25 @@ public:
 public:
 	void InputMouseLDown();
 	void InputMouseLUp();	
+
+
+public:
+	UPROPERTY(EditAnywhere)
+	class ACube* startCube;
+	UPROPERTY(EditAnywhere)
+	class ACube* goalCube;
+	UPROPERTY(EditAnywhere)
+	class ACube* currCube;
+
+
+	UPROPERTY(EditAnywhere)
+	TArray<class ACube*> openArray;
+	UPROPERTY(EditAnywhere)
+	TArray<class ACube*> closeArray;
+
+
+	void FindPath();
+	void FindNear();
+
+	void AddOpen(FVector dir);
 };

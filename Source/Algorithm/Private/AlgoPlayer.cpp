@@ -4,6 +4,7 @@
 #include "AlgoPlayer.h"
 #include "AlgoPuzzle.h"
 #include <Blueprint/WidgetLayoutLibrary.h>
+#include "Cube.h"
 
 // Sets default values
 AAlgoPlayer::AAlgoPlayer()
@@ -25,8 +26,8 @@ void AAlgoPlayer::BeginPlay()
 	Super::BeginPlay();
 	
 	//퍼즐 화면 보이게 하자
-	puzzle = CreateWidget<UAlgoPuzzle>(GetWorld(), puzzleFactory);
-	puzzle->AddToViewport();
+	/*puzzle = CreateWidget<UAlgoPuzzle>(GetWorld(), puzzleFactory);
+	puzzle->AddToViewport();*/
 
 	//마우스 커서 보이게 하자
 	GetWorld()->GetFirstPlayerController()->bShowMouseCursor = true;
@@ -55,11 +56,87 @@ void AAlgoPlayer::InputMouseLDown()
 	FVector2D mousePos = UWidgetLayoutLibrary::GetMousePositionOnViewport(GetWorld());
 	
 	//선택된 카드 알아오자
-	puzzle->SelectCard(mousePos);
+	//puzzle->SelectCard(mousePos);
+
+	FVector start, end;
+	FHitResult hit;
+	FCollisionQueryParams params;
+	params.AddIgnoredActor(this);
+
+	//start Cube 알아오자
+	start = GetActorLocation() + FVector::UpVector;
+	end = start + FVector::DownVector * 2;
+	bool result = GetWorld()->LineTraceSingleByChannel(hit, start, end, ECC_Visibility, params);
+	if (result == true)
+	{
+		startCube = Cast<ACube>(hit.GetActor());
+		UE_LOG(LogTemp, Warning, TEXT("start : %s"), *hit.GetActor()->GetActorNameOrLabel());
+
+		openArray.Add(startCube);
+
+	}
+
+	//goal Cube 알아오자
+	FVector dir;
+	//마우스 클릭위치를 3D 공간의 좌표로 바꾸자
+	GetWorld()->GetFirstPlayerController()->DeprojectMousePositionToWorld(start, dir);
+	end = start + dir * 100000;
+	result = GetWorld()->LineTraceSingleByChannel(hit, start, end, ECC_Visibility, params);
+	if (result == true)
+	{
+		goalCube = Cast<ACube>(hit.GetActor());
+		UE_LOG(LogTemp, Warning, TEXT("goal : %s"), *hit.GetActor()->GetActorNameOrLabel());
+	}
+
+	FindPath();
 }
 
 void AAlgoPlayer::InputMouseLUp()
 {
 	//카드 초기화
-	puzzle->InitCard();
+	//puzzle->InitCard();
+}
+
+void AAlgoPlayer::FindPath()
+{
+	//기준이 되는 큐브 설정
+	currCube = openArray[0];
+
+	//오른쪽
+	AddOpen(FVector::RightVector);
+	//왼쪽
+	AddOpen(FVector::LeftVector);
+	//앞
+	AddOpen(FVector::ForwardVector);
+	//뒤
+	AddOpen(FVector::BackwardVector);
+
+}
+
+void AAlgoPlayer::FindNear()
+{
+
+}
+
+void AAlgoPlayer::AddOpen(FVector dir)
+{
+	FHitResult hit;
+	FVector start, end;
+	FCollisionQueryParams param;
+	param.AddIgnoredActor(currCube);
+
+	start = currCube->GetActorLocation();
+	end = start + dir * 100;
+	if (GetWorld()->LineTraceSingleByChannel(hit, start, end, ECC_Visibility, param))
+	{
+		ACube* cube = Cast<ACube>(hit.GetActor());
+		//openArray, closeArray 에 존재 하지 않는다면
+		if (openArray.Contains(cube) == false && closeArray.Contains(cube) == false)
+		{
+			//부딪힌 큐브의 Cost(비용) 구하자
+			cube->SetCost(currCube, goalCube);
+			//openArray 추가
+			openArray.Add(cube);
+		}
+	}
 }
