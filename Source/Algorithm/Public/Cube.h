@@ -23,11 +23,22 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-
 	float startCost = 0;
-	float endCost = 0;
+	float goalCost = 0;
 	float totalCost = 0;
 
-	void SetCost(ACube* currCube, ACube* goalCube);
+	UPROPERTY()
+	class UBorder* outLine;
+	UPROPERTY()
+	class UTextBlock* textTotal;
+	UPROPERTY()
+	class UTextBlock* textStart;
+	UPROPERTY()
+	class UTextBlock* textGoal;
+	UPROPERTY()
+	class ACube* parentCube;
 
+	void SetCost(ACube* currCube, ACube* goalCube);
+	void SetColor(FLinearColor color);
+	void SetInit();
 };

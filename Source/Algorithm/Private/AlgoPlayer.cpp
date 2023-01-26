@@ -38,6 +38,24 @@ void AAlgoPlayer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	SimpleMove();
+}
+
+void AAlgoPlayer::SimpleMove()
+{
+	//만약에 pathArray 에 값이 없다면 함수를 나간다.
+	if (pathArray.Num() == 0) return;
+
+	currTime += GetWorld()->GetDeltaSeconds();
+	if (currTime > 0.3f)
+	{
+		currTime = 0;
+		FVector pos = pathArray[0]->GetActorLocation();
+		pos.Z = 100;
+		SetActorLocation(pos);
+
+		pathArray.RemoveAt(0);
+	}
 }
 
 // Called to bind functionality to input
@@ -52,6 +70,25 @@ void AAlgoPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 void AAlgoPlayer::InputMouseLDown()
 {
+	if (startCube != nullptr)
+	{
+		FindPath();
+		return;
+	}
+
+	//초기셋팅
+	for (int32 i = 0; i < openArray.Num(); i++)
+	{
+		openArray[i]->SetInit();
+	}
+	for (int32 i = 0; i < closeArray.Num(); i++)
+	{
+		closeArray[i]->SetInit();
+	}
+	openArray.Empty();
+	closeArray.Empty();
+
+
 	//마우스 클릭 좌표를 얻어오자
 	FVector2D mousePos = UWidgetLayoutLibrary::GetMousePositionOnViewport(GetWorld());
 	
@@ -106,11 +143,44 @@ void AAlgoPlayer::FindPath()
 	AddOpen(FVector::RightVector);
 	//왼쪽
 	AddOpen(FVector::LeftVector);
-	//앞
-	AddOpen(FVector::ForwardVector);
 	//뒤
 	AddOpen(FVector::BackwardVector);
+	//앞
+	AddOpen(FVector::ForwardVector);
 
+	//currCube 를 openArray에 뺀다
+	openArray.Remove(currCube);
+	//currCube 를 closeArray에 추가
+	closeArray.Add(currCube);
+	//currCube 의 테두리 색을 빨간색으로 바꾼다.
+	currCube->SetColor(FLinearColor::Red);
+
+	//Goal 까지 찾아갔느냐? (길찾기가 끝났니?)
+	if (openArray[0] == goalCube || openArray.Num() == 0)
+	{
+		//최단거리를 노란색으로 표시하자
+		ACube* cube = goalCube;
+		//부모 Cube 가 없을때까지 반복
+		while (cube->parentCube != nullptr)
+		{
+			//진짜 길 추가
+			pathArray.Insert(cube, 0);
+
+			cube->SetColor(FLinearColor::Yellow);
+			cube = cube->parentCube;
+		}
+		//처음 큐브 추가
+		pathArray.Insert(startCube, 0);
+		startCube->SetColor(FLinearColor::Yellow);
+
+		//startCube, goalCube 초기화
+		startCube = nullptr;
+		goalCube = nullptr;
+	}
+	else
+	{
+		FindPath();
+	}
 }
 
 void AAlgoPlayer::FindNear()
@@ -135,8 +205,19 @@ void AAlgoPlayer::AddOpen(FVector dir)
 		{
 			//부딪힌 큐브의 Cost(비용) 구하자
 			cube->SetCost(currCube, goalCube);
+
+			//openArray 에 들어있는 큐브들의 totalCost 와 cube 의 totalCost 를 비교
+			int32 i = 0;
+			for (i = 0; i < openArray.Num(); i++)
+			{
+				if (openArray[i]->totalCost >= cube->totalCost)
+				{
+					break;
+				}
+			}
+
 			//openArray 추가
-			openArray.Add(cube);
+			openArray.Insert(cube, i);
 		}
 	}
 }
